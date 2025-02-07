@@ -6,7 +6,7 @@ airportsdata = airportsdata.load('IATA')
 def generate_sql_updates():
     print(airportsdata['JFK'])
     
-    with open('nameless-airports.json') as airports_json:
+    with open('nameless-airports-homol.json') as airports_json:
         airports = json.load(airports_json)
         
         sql_updates = []
@@ -26,8 +26,14 @@ def generate_sql_updates():
                     manual_updates.append("country_name = ''") 
                 
                 if manual_updates:
-                    sql = f"UPDATE public.airports SET {', '.join(manual_updates)} WHERE id = {airport['id']};"
-                    manual_sql_updates.append(sql)
+                    sql = f"""
+                    UPDATE public.airports 
+                    SET {', '.join(manual_updates)} 
+                    WHERE id = {airport['id']} 
+                    AND iata = '{airport_iata}' 
+                    AND name = '{airport['name']}';
+                    """
+                    manual_sql_updates.append(sql.strip())
                 continue
             
             updates = []
@@ -37,13 +43,19 @@ def generate_sql_updates():
                 updates.append(f"country_name = '{airport_info['country']}'")
             
             if updates:
-                sql = f"UPDATE public.airports SET {', '.join(updates)} WHERE id = {airport['id']};"
-                sql_updates.append(sql)
+                sql = f"""
+                UPDATE public.airports 
+                SET {', '.join(updates)} 
+                WHERE id = {airport['id']} 
+                AND iata = '{airport_iata}' 
+                AND name = '{airport['name']}';
+                """
+                sql_updates.append(sql.strip())
         
-        with open('update_airports.sql', 'w') as sql_file:
+        with open('update_airports_homol.sql', 'w') as sql_file:
             sql_file.write("\n".join(sql_updates))
         
-        with open('manual_update_airports.sql', 'w') as manual_sql_file:
+        with open('update_airports_manual_homol.sql', 'w') as manual_sql_file:
             manual_sql_file.write("\n".join(manual_sql_updates))
         
         print("SQL update scripts generated")
